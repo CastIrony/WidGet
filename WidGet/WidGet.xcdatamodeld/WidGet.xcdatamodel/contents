@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="17162" systemVersion="19F101" minimumToolsVersion="Automatic" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="CalendarItem" representedClassName="CalendarItem" syncable="YES" codeGenerationType="class">
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="subtitle" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="remoteCalendarPanel" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RemoteCalendarPanel" inverseName="calendarItems" inverseEntity="RemoteCalendarPanel"/>
+    </entity>
+    <entity name="ContentPanel" representedClassName="ContentPanel" isAbstract="YES" syncable="YES" codeGenerationType="class">
+        <attribute name="height" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="width" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="x" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="y" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="backgroundColor" maxCount="1" deletionRule="Cascade" destinationEntity="UserColor"/>
+        <relationship name="foregroundColor" maxCount="1" deletionRule="Cascade" destinationEntity="UserColor"/>
+        <relationship name="widget" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="Widget" inverseName="items" inverseEntity="Widget"/>
+    </entity>
+    <entity name="LocalImagePanel" representedClassName="LocalImagePanel" parentEntity="ContentPanel" syncable="YES" codeGenerationType="class">
+        <attribute name="imageData" optional="YES" attributeType="Binary"/>
+        <attribute name="imageHeight" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="imageWidth" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="RemoteCalendarPanel" representedClassName="RemoteCalendarPanel" parentEntity="ContentPanel" syncable="YES" codeGenerationType="class">
+        <attribute name="errorMessage" optional="YES" attributeType="String"/>
+        <relationship name="calendarItems" toMany="YES" deletionRule="Cascade" destinationEntity="CalendarItem" inverseName="remoteCalendarPanel" inverseEntity="CalendarItem"/>
+        <relationship name="font" maxCount="1" deletionRule="Cascade" destinationEntity="UserFont"/>
+        <relationship name="remoteResource" maxCount="1" deletionRule="Cascade" destinationEntity="RemoteResource"/>
+    </entity>
+    <entity name="RemoteImagePanel" representedClassName="RemoteImagePanel" parentEntity="ContentPanel" syncable="YES" codeGenerationType="class">
+        <attribute name="errorMessage" optional="YES" attributeType="String"/>
+        <attribute name="imageHeight" optional="YES" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="imageWidth" optional="YES" attributeType="Integer 32" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="remoteResource" maxCount="1" deletionRule="Cascade" destinationEntity="RemoteResource"/>
+    </entity>
+    <entity name="RemoteResource" representedClassName="RemoteResource" syncable="YES" codeGenerationType="class">
+        <attribute name="automaticallyRefresh" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="lastRefreshed" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="loadedData" optional="YES" attributeType="Binary"/>
+        <attribute name="url" attributeType="URI"/>
+    </entity>
+    <entity name="RemoteRSSPanel" representedClassName="RemoteRSSPanel" parentEntity="ContentPanel" syncable="YES" codeGenerationType="class">
+        <attribute name="errorMessage" optional="YES" attributeType="String"/>
+        <relationship name="font" maxCount="1" deletionRule="Cascade" destinationEntity="UserFont"/>
+        <relationship name="remoteResource" maxCount="1" deletionRule="Cascade" destinationEntity="RemoteResource"/>
+        <relationship name="rssItems" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="RSSItem" inverseName="remoteRSSPanel" inverseEntity="RSSItem"/>
+    </entity>
+    <entity name="RSSItem" representedClassName="RSSItem" syncable="YES" codeGenerationType="class">
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="subtitle" optional="YES" attributeType="String"/>
+        <attribute name="title" optional="YES" attributeType="String"/>
+        <relationship name="remoteResource" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RemoteResource"/>
+        <relationship name="remoteRSSPanel" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="RemoteRSSPanel" inverseName="rssItems" inverseEntity="RemoteRSSPanel"/>
+    </entity>
+    <entity name="TextPanel" representedClassName="TextPanel" parentEntity="ContentPanel" syncable="YES" codeGenerationType="class">
+        <attribute name="text" attributeType="String" defaultValueString="Text"/>
+        <relationship name="font" maxCount="1" deletionRule="Cascade" destinationEntity="UserFont"/>
+    </entity>
+    <entity name="UserColor" representedClassName="UserColor" syncable="YES" codeGenerationType="class"/>
+    <entity name="UserFont" representedClassName="UserFont" syncable="YES" codeGenerationType="class"/>
+    <entity name="Widget" representedClassName="Widget" syncable="YES" codeGenerationType="class">
+        <attribute name="widgetSize" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <relationship name="items" toMany="YES" deletionRule="Cascade" ordered="YES" destinationEntity="ContentPanel" inverseName="widget" inverseEntity="ContentPanel"/>
+    </entity>
+    <elements>
+        <element name="Widget" positionX="-110.44921875" positionY="12.99609375" width="128" height="73"/>
+        <element name="ContentPanel" positionX="74.6875" positionY="-46.92578125" width="128" height="148"/>
+        <element name="LocalImagePanel" positionX="393.1875" positionY="-62.07421875" width="128" height="88"/>
+        <element name="TextPanel" positionX="391.734375" positionY="-143.9921875" width="128" height="73"/>
+        <element name="RemoteRSSPanel" positionX="390.4609375" positionY="211.53125" width="128" height="103"/>
+        <element name="RemoteCalendarPanel" positionX="383.49609375" positionY="118.38671875" width="132.6328125" height="103"/>
+        <element name="RemoteImagePanel" positionX="381.75390625" positionY="10.58984375" width="128" height="103"/>
+        <element name="UserFont" positionX="680.81640625" positionY="-124.5078125" width="128" height="43"/>
+        <element name="RemoteResource" positionX="630.203125" positionY="56.75390625" width="128" height="103"/>
+        <element name="CalendarItem" positionX="780.9921875" positionY="146.75390625" width="128" height="103"/>
+        <element name="RSSItem" positionX="785.30859375" positionY="268.37890625" width="128" height="118"/>
+        <element name="UserColor" positionX="387" positionY="135" width="128" height="43"/>
+    </elements>
+</model>
