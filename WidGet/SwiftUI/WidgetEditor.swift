@@ -28,8 +28,8 @@ struct WidgetEditor: View {
     let pasteboardItemChanged = NotificationCenter.default.publisher(for: UIPasteboard.changedNotification)
     let pasteboardItemRemoved = NotificationCenter.default.publisher(for: UIPasteboard.removedNotification)
 
-    @State var activeGuideIDX: String?
-    @State var activeGuideIDY: String?
+    @State var activeGuideIDsX: Set<String> = []
+    @State var activeGuideIDsY: Set<String> = []
 
     @State var impactGenerator = UIImpactFeedbackGenerator(style: .soft)
 
@@ -70,8 +70,8 @@ struct WidgetEditor: View {
             fieldEditors()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onChange(of: activeGuideIDX) { if $0 != nil { impactGenerator.impactOccurred() } }
-        .onChange(of: activeGuideIDY) { if $0 != nil { impactGenerator.impactOccurred() } }
+        .onChange(of: activeGuideIDsX) { if $0.count > 0 { impactGenerator.impactOccurred() } }
+        .onChange(of: activeGuideIDsY) { if $0.count > 0 { impactGenerator.impactOccurred() } }
         .onChange(of: urlField?.contentPanelID) { if $0 == nil, let contentPanelID = selectedContentPanelID { self.loadContent(for: contentPanelID) } }
         .onAppear {
             NotificationCenter.default.post(name: UIPasteboard.changedNotification, object: "bar")
@@ -171,10 +171,13 @@ struct WidgetEditor: View {
             ForEach(widget.contentPanelIDs.reversed(), id: \.self) {
                 contentPanelID in
 
-                let snapGuidesActive = selectedContentPanelID != contentPanelID && ((activeGuideIDX?.starts(with: String(describing: contentPanelID)) ?? false) || (activeGuideIDY?.starts(with: String(describing: contentPanelID)) ?? false))
+                let snapGuidesActive = selectedContentPanelID != contentPanelID && (
+                    (activeGuideIDsX.filter { $0.starts(with: String(describing: contentPanelID)) }.count > 0) ||
+                    (activeGuideIDsY.filter { $0.starts(with: String(describing: contentPanelID)) }.count > 0)
+                )
 
                 ClearView()
-                    .canvasResizable(coordinateSpace: "canvas", frame: frameBinding(for: contentPanelID), isSelected: contentPanelSelectionBinding(for: contentPanelID), snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY, activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesActive: snapGuidesActive, cornerRadius: widget.cornerRadius(for: contentPanelID), colorScheme: colorScheme)
+                    .canvasResizable(coordinateSpace: "canvas", frame: frameBinding(for: contentPanelID), isSelected: contentPanelSelectionBinding(for: contentPanelID), snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY, activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesActive: snapGuidesActive, cornerRadius: widget.cornerRadius(for: contentPanelID), colorScheme: colorScheme)
                     .zIndex(contentPanelID == selectedContentPanelID ? 2 : 1)
             }
         }
@@ -187,29 +190,32 @@ struct WidgetEditor: View {
     func snapGuides() -> some View {
         let deviceFrame = widget.widgetSize.deviceFrame
 
-        ForEach(snapGuidesX) {
-            guide in
+        ZStack {
+            ForEach(snapGuidesX) {
+                guide in
 
-            let guideActive = (activeGuideIDX == guide.id)
+                let guideActive = activeGuideIDsX.contains(guide.id)
 
-            if !guide.projected, guideActive || guide.alwaysVisible {
-                (guideActive ? Color.accentColor : Color.gray.opacity(0.3))
-                    .frame(width: guideActive ? 3 : 1, height: deviceFrame.height)
-                    .position(CGPoint(x: guide.position, y: 0.5 * deviceFrame.height))
+                if !guide.projected, guideActive || guide.alwaysVisible {
+                    Capsule().fill(guideActive ? Color.accentColor : Color.gray.opacity(0.3))
+                        .frame(width: guideActive ? 3 : 1, height: deviceFrame.height + (guideActive ? 3 : 0))
+                        .position(CGPoint(x: guide.position, y: 0.5 * deviceFrame.height))
+                }
+            }
+
+            ForEach(snapGuidesY) {
+                guide in
+
+                let guideActive = activeGuideIDsY.contains(guide.id)
+
+                if !guide.projected, guideActive || guide.alwaysVisible {
+                    Capsule().fill(guideActive ? Color.accentColor : Color.gray.opacity(0.3))
+                        .frame(width: deviceFrame.width + (guideActive ? 3 : 0), height: guideActive ? 3 : 1)
+                        .position(CGPoint(x: 0.5 * deviceFrame.width, y: guide.position))
+                }
             }
         }
-
-        ForEach(snapGuidesY) {
-            guide in
-
-            let guideActive = (activeGuideIDY == guide.id)
-
-            if !guide.projected, guideActive || guide.alwaysVisible {
-                (guideActive ? Color.accentColor : Color.gray.opacity(0.3))
-                    .frame(width: deviceFrame.width, height: guideActive ? 3 : 1)
-                    .position(CGPoint(x: 0.5 * deviceFrame.width, y: guide.position))
-            }
-        }
+        .frame(width: deviceFrame.width, height: deviceFrame.height, alignment: .center)
     }
 
     @ViewBuilder
@@ -238,9 +244,6 @@ struct WidgetEditor: View {
                                 .position(CGPoint(x: frame.midX, y: frame.midY))
                         }
 
-                        if editorSnap {
-                            snapGuides()
-                        }
                     }
                 )
                 .clipShape(RoundedRectangle(cornerRadius: widget.cornerRadius, style: .continuous))
@@ -249,6 +252,10 @@ struct WidgetEditor: View {
                 .environment(\.widgetColorScheme, editorColorScheme)
 
             resizeHandleCanvas()
+
+            if editorSnap {
+                snapGuides()
+            }
         }
         .frame(height: deviceFrame.height, alignment: .center)
     }
@@ -516,15 +523,17 @@ struct WidgetEditor: View {
         let strength = CGFloat(4)
         let highStrength: Double = 6
 
-        snapGuides.append(SnapGuide(position: 0, id: "leading", strength: highStrength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: 0, id: "leading", strength: highStrength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: smallPadding, id: "leading small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: largePadding, id: "leading large padding", strength: strength, alwaysVisible: true, projected: false))
+        
         snapGuides.append(SnapGuide(position: fullWidth * 0.5 - smallPadding, id: "horizontal center leading small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullWidth * 0.5, id: "horizontal center", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullWidth * 0.5 + smallPadding, id: "horizontal center trailing small padding", strength: strength, alwaysVisible: true, projected: false))
+        
         snapGuides.append(SnapGuide(position: fullWidth - largePadding, id: "trailing large padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullWidth - smallPadding, id: "trailing small padding", strength: strength, alwaysVisible: true, projected: false))
-        snapGuides.append(SnapGuide(position: fullWidth, id: "trailing", strength: highStrength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: fullWidth, id: "trailing", strength: highStrength, alwaysVisible: true, projected: false))
 
         for contentPanelId in widget.contentPanelIDs {
             if contentPanelId != selectedContentPanelID {
@@ -558,15 +567,17 @@ struct WidgetEditor: View {
         let strength = CGFloat(4)
         let highStrength: Double = 6
 
-        snapGuides.append(SnapGuide(position: 0, id: "top", strength: highStrength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: 0, id: "top", strength: highStrength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: smallPadding, id: "top small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: largePadding, id: "top large padding", strength: strength, alwaysVisible: true, projected: false))
+        
         snapGuides.append(SnapGuide(position: fullHeight * 0.5 - smallPadding, id: "vertical center top small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullHeight * 0.5, id: "vertical center", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullHeight * 0.5 + smallPadding, id: "vertical center bottom small padding", strength: strength, alwaysVisible: true, projected: false))
+        
         snapGuides.append(SnapGuide(position: fullHeight - largePadding, id: "bottom large padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullHeight - smallPadding, id: "bottom small padding", strength: strength, alwaysVisible: true, projected: false))
-        snapGuides.append(SnapGuide(position: fullHeight, id: "bottom", strength: highStrength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: fullHeight, id: "bottom", strength: highStrength, alwaysVisible: true, projected: false))
 
         for contentPanelId in widget.contentPanelIDs {
             if contentPanelId != selectedContentPanelID {

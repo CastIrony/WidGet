@@ -25,8 +25,8 @@ struct CanvasResizable: ViewModifier {
     @State var isDragging = false
     @State var handlesAreDragging = false
 
-    @Binding var activeGuideIDX: String?
-    @Binding var activeGuideIDY: String?
+    @Binding var activeGuideIDsX: Set<String>
+    @Binding var activeGuideIDsY: Set<String>
 
     let snapGuidesActive: Bool
 
@@ -64,8 +64,8 @@ struct CanvasResizable: ViewModifier {
 
                             initialDragDelta = nil
                             isDragging = false
-                            activeGuideIDX = nil
-                            activeGuideIDY = nil
+                            activeGuideIDsX = []
+                            activeGuideIDsY = []
                         }
                         .simultaneously(with: TapGesture().onEnded { isSelected.toggle() })
                 )
@@ -84,16 +84,16 @@ struct CanvasResizable: ViewModifier {
                     }
 
                     Group {
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .leading, vertical: .top), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .center, vertical: .top), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .trailing, vertical: .top), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .leading, vertical: .top), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .center, vertical: .top), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .trailing, vertical: .top), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
 
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .leading, vertical: .center), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .trailing, vertical: .center), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .leading, vertical: .center), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .trailing, vertical: .center), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
 
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .leading, vertical: .bottom), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .center, vertical: .bottom), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
-                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .trailing, vertical: .bottom), activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .leading, vertical: .bottom), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .center, vertical: .bottom), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
+                        ResizeHandle(frame: $frame, handleAlignment: Alignment(horizontal: .trailing, vertical: .bottom), activeGuideIDsX: $activeGuideIDsX, activeGuideIDsY: $activeGuideIDsY, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY)
                     }
 
                     HandleBorder(frame: $frame, color: colorScheme == .light ? .white : .black, lineWidth: 2)
@@ -141,8 +141,8 @@ struct CanvasResizable: ViewModifier {
         var midX: CGFloat
         var midY: CGFloat
 
-        (midX, activeGuideIDX) = snap(newValue.x - (initialDragDelta?.width ?? 0), to: projectedSnapGuidesX)
-        (midY, activeGuideIDY) = snap(newValue.y - (initialDragDelta?.height ?? 0), to: projectedSnapGuidesY)
+        (midX, activeGuideIDsX) = snap(newValue.x - (initialDragDelta?.width ?? 0), to: projectedSnapGuidesX)
+        (midY, activeGuideIDsY) = snap(newValue.y - (initialDragDelta?.height ?? 0), to: projectedSnapGuidesY)
 
         let minX = midX - frame.width / 2
         let minY = midY - frame.height / 2
@@ -174,8 +174,8 @@ struct ResizeHandle: View {
     @State var isDragging = false
     @State var initialDragDelta: CGSize?
 
-    @Binding var activeGuideIDX: String?
-    @Binding var activeGuideIDY: String?
+    @Binding var activeGuideIDsX: Set<String>
+    @Binding var activeGuideIDsY: Set<String>
 
     let snapGuidesX: [SnapGuide]
     let snapGuidesY: [SnapGuide]
@@ -222,14 +222,14 @@ struct ResizeHandle: View {
         var maxY = frame.maxY
 
         switch handleAlignment.horizontal {
-        case .leading: (minX, activeGuideIDX) = snap(newValue.x - (initialDragDelta?.width ?? 0), to: projectedSnapGuidesX)
-        case .trailing: (maxX, activeGuideIDX) = snap(newValue.x - (initialDragDelta?.width ?? 0), to: projectedSnapGuidesX)
+        case .leading: (minX, activeGuideIDsX) = snap(newValue.x - (initialDragDelta?.width ?? 0), to: projectedSnapGuidesX)
+        case .trailing: (maxX, activeGuideIDsX) = snap(newValue.x - (initialDragDelta?.width ?? 0), to: projectedSnapGuidesX)
         default: break
         }
 
         switch handleAlignment.vertical {
-        case .top: (minY, activeGuideIDY) = snap(newValue.y - (initialDragDelta?.height ?? 0), to: projectedSnapGuidesY)
-        case .bottom: (maxY, activeGuideIDY) = snap(newValue.y - (initialDragDelta?.height ?? 0), to: projectedSnapGuidesY)
+        case .top: (minY, activeGuideIDsY) = snap(newValue.y - (initialDragDelta?.height ?? 0), to: projectedSnapGuidesY)
+        case .bottom: (maxY, activeGuideIDsY) = snap(newValue.y - (initialDragDelta?.height ?? 0), to: projectedSnapGuidesY)
         default: break
         }
 
@@ -254,8 +254,8 @@ struct ResizeHandle: View {
         for snapGuide in snapGuides {
             if snapGuide.position > handlePosition1D,
                snapGuide.position - snapGuide.strength < handlePosition1D + step,
-               snapGuide.id != activeGuideIDX,
-               snapGuide.id != activeGuideIDY
+               !activeGuideIDsX.contains(snapGuide.id),
+               !activeGuideIDsY.contains(snapGuide.id)
             {
                 snapToGuide = snapGuide
                 break
@@ -264,16 +264,16 @@ struct ResizeHandle: View {
 
         if let snapToGuide = snapToGuide {
             switch (handleAlignment.horizontal, handleAlignment.vertical) {
-            case (.leading, .center), (.trailing, .center): activeGuideIDX = snapToGuide.id; updateHandlePosition(newValue: CGPoint(x: snapToGuide.position, y: handlePosition.y))
-            case (.center, .top), (.center, .bottom): activeGuideIDY = snapToGuide.id; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: snapToGuide.position))
+            case (.leading, .center), (.trailing, .center): activeGuideIDsX = [snapToGuide.id]; updateHandlePosition(newValue: CGPoint(x: snapToGuide.position, y: handlePosition.y))
+            case (.center, .top), (.center, .bottom): activeGuideIDsY = [snapToGuide.id]; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: snapToGuide.position))
             default: break
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.activeGuideIDX = nil; self.activeGuideIDY = nil }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.activeGuideIDsX = []; self.activeGuideIDsY = [] }
         } else {
             switch (handleAlignment.horizontal, handleAlignment.vertical) {
-            case (.leading, .center), (.trailing, .center): activeGuideIDX = nil; updateHandlePosition(newValue: CGPoint(x: handlePosition1D + step, y: handlePosition.y))
-            case (.center, .top), (.center, .bottom): activeGuideIDY = nil; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: handlePosition1D + step))
+            case (.leading, .center), (.trailing, .center): activeGuideIDsX = []; updateHandlePosition(newValue: CGPoint(x: handlePosition1D + step, y: handlePosition.y))
+            case (.center, .top), (.center, .bottom): activeGuideIDsY = []; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: handlePosition1D + step))
             default: break
             }
         }
@@ -299,8 +299,8 @@ struct ResizeHandle: View {
         for snapGuide in snapGuides {
             if snapGuide.position < handlePosition1D,
                snapGuide.position + snapGuide.strength > handlePosition1D + step,
-               snapGuide.id != activeGuideIDX,
-               snapGuide.id != activeGuideIDY
+               !activeGuideIDsX.contains(snapGuide.id),
+               !activeGuideIDsY.contains(snapGuide.id)
             {
                 snapToGuide = snapGuide
                 break
@@ -311,16 +311,16 @@ struct ResizeHandle: View {
 
         if let snapToGuide = snapToGuide {
             switch (handleAlignment.horizontal, handleAlignment.vertical) {
-            case (.leading, .center), (.trailing, .center): activeGuideIDX = snapToGuide.id; updateHandlePosition(newValue: CGPoint(x: snapToGuide.position, y: handlePosition.y))
-            case (.center, .top), (.center, .bottom): activeGuideIDY = snapToGuide.id; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: snapToGuide.position))
+            case (.leading, .center), (.trailing, .center): activeGuideIDsX = [snapToGuide.id]; updateHandlePosition(newValue: CGPoint(x: snapToGuide.position, y: handlePosition.y))
+            case (.center, .top), (.center, .bottom): activeGuideIDsY = [snapToGuide.id]; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: snapToGuide.position))
             default: break
             }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.activeGuideIDX = nil; self.activeGuideIDY = nil }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { self.activeGuideIDsX = []; self.activeGuideIDsY = [] }
         } else {
             switch (handleAlignment.horizontal, handleAlignment.vertical) {
-            case (.leading, .center), (.trailing, .center): activeGuideIDX = nil; updateHandlePosition(newValue: CGPoint(x: handlePosition1D - step, y: handlePosition.y))
-            case (.center, .top), (.center, .bottom): activeGuideIDY = nil; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: handlePosition1D - step))
+            case (.leading, .center), (.trailing, .center): activeGuideIDsX = []; updateHandlePosition(newValue: CGPoint(x: handlePosition1D - step, y: handlePosition.y))
+            case (.center, .top), (.center, .bottom): activeGuideIDsY = []; updateHandlePosition(newValue: CGPoint(x: handlePosition.x, y: handlePosition1D - step))
             default: break
             }
         }
@@ -397,8 +397,8 @@ struct ResizeHandle: View {
                     _ in
 
                     initialDragDelta = nil
-                    activeGuideIDX = nil
-                    activeGuideIDY = nil
+                    activeGuideIDsX = []
+                    activeGuideIDsY = []
 
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) { isDragging = false }
                 }
@@ -410,9 +410,9 @@ struct ResizeHandle: View {
 }
 
 extension View {
-    func canvasResizable(coordinateSpace: String, frame: Binding<CGRect>, isSelected: Binding<Bool>, snapGuidesX: [SnapGuide], snapGuidesY: [SnapGuide], activeGuideIDX: Binding<String?>, activeGuideIDY: Binding<String?>, snapGuidesActive: Bool, cornerRadius: CGFloat, colorScheme _: ColorScheme) -> some View
+    func canvasResizable(coordinateSpace: String, frame: Binding<CGRect>, isSelected: Binding<Bool>, snapGuidesX: [SnapGuide], snapGuidesY: [SnapGuide], activeGuideIDsX: Binding<Set<String>>, activeGuideIDsY: Binding<Set<String>>, snapGuidesActive: Bool, cornerRadius: CGFloat, colorScheme _: ColorScheme) -> some View
     {
-        modifier(CanvasResizable(coordinateSpace: coordinateSpace, frame: frame, isSelected: isSelected, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY, cornerRadius: cornerRadius, activeGuideIDX: activeGuideIDX, activeGuideIDY: activeGuideIDY, snapGuidesActive: snapGuidesActive))
+        modifier(CanvasResizable(coordinateSpace: coordinateSpace, frame: frame, isSelected: isSelected, snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY, cornerRadius: cornerRadius, activeGuideIDsX: activeGuideIDsX, activeGuideIDsY: activeGuideIDsY, snapGuidesActive: snapGuidesActive))
     }
 }
 
@@ -462,9 +462,8 @@ struct SnapGuide: Identifiable {
     let projected: Bool
 }
 
-func snap(_ position: CGFloat, to snapGuides: [SnapGuide]) -> (CGFloat, String?) {
+func snap(_ position: CGFloat, to snapGuides: [SnapGuide]) -> (CGFloat, Set<String>) {
     var snappedPosition = position
-    var guideID: String?
     var highestGuideStrength: CGFloat = 0
 
     for snapGuide in snapGuides {
@@ -473,9 +472,10 @@ func snap(_ position: CGFloat, to snapGuides: [SnapGuide]) -> (CGFloat, String?)
         if guideStrength > highestGuideStrength {
             highestGuideStrength = guideStrength
             snappedPosition = snapGuide.position
-            guideID = snapGuide.id
         }
     }
-
-    return (snappedPosition, guideID)
+    
+    let guideIDs = snapGuides.filter { $0.position == snappedPosition }.map { $0.id }
+    
+    return (snappedPosition, Set(guideIDs))
 }
