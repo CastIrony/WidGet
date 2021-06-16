@@ -64,7 +64,7 @@ struct RGBColor: Equatable, Codable {
     var uiColor: UIColor {
         UIColor(red: red, green: green, blue: blue, alpha: alpha)
     }
-
+    
     init(uiColor: UIColor) {
         var red: CGFloat = 0
         var green: CGFloat = 0
@@ -112,7 +112,7 @@ struct RGBColor: Equatable, Codable {
 
     var hexString: String {
         get {
-            return String(format: "#%02X%02X%02X%02X", Int(round(red * 255)), Int(round(green * 255)), Int(round(blue * 255)), Int(round(alpha * 255)))
+            return String(format: "#%02X%02X%02X", Int(round(red * 255)), Int(round(green * 255)), Int(round(blue * 255)))
         }
 
         set {
@@ -128,6 +128,18 @@ struct RGBColor: Equatable, Codable {
                     green = CGFloat((hexNumber & 0x00FF_0000) >> 16) / 255
                     blue = CGFloat((hexNumber & 0x0000_FF00) >> 8) / 255
                     alpha = CGFloat(hexNumber & 0x0000_00FF) / 255
+
+                    return
+                }
+            }
+            else if hexColor.count == 6 {
+                let scanner = Scanner(string: hexColor)
+                var hexNumber: UInt64 = 0
+
+                if scanner.scanHexInt64(&hexNumber) {
+                    red = CGFloat((hexNumber & 0x00FF_0000) >> 16) / 255
+                    green = CGFloat((hexNumber & 0x0000_FF00) >> 8) / 255
+                    blue = CGFloat(hexNumber & 0x0000_00FF) / 255
 
                     return
                 }
@@ -253,6 +265,12 @@ struct HSBColor: Equatable, Codable, Identifiable, Hashable {
         try container.encode(saturation, forKey: .saturation)
         try container.encode(brightness, forKey: .brightness)
         try container.encode(alpha, forKey: .alpha)
+    }
+
+    func replacingAlpha(_ alpha: CGFloat) -> HSBColor {
+        var color = self
+        color.alpha = alpha
+        return color
     }
 
     var opticalLuminance: CGFloat {

@@ -198,38 +198,40 @@ struct WidGet_WidgetEntryView: View {
 //            }
 
             let cornerRadius = CGFloat(23.0)
+            GeometryReader { geometry in
+                ZStack {
+                    LinearGradient(gradient: Gradient(colors: [Color(#colorLiteral(red: 1, green: 0.6235829871, blue: 0, alpha: 1)), Color(#colorLiteral(red: 0.9488901478, green: 0.3370382543, blue: 0, alpha: 1)), Color(#colorLiteral(red: 0.919741599, green: 0, blue: 0.01532902666, alpha: 1)), Color(#colorLiteral(red: 0.7517621157, green: 0, blue: 0.6094596243, alpha: 1))]), startPoint: .top, endPoint: .bottom)
 
-            ZStack {
-                LinearGradient(gradient: Gradient(colors: [Color(#colorLiteral(red: 1, green: 0.6235829871, blue: 0, alpha: 1)), Color(#colorLiteral(red: 0.9488901478, green: 0.3370382543, blue: 0, alpha: 1)), Color(#colorLiteral(red: 0.919741599, green: 0, blue: 0.01532902666, alpha: 1)), Color(#colorLiteral(red: 0.7517621157, green: 0, blue: 0.6094596243, alpha: 1))]), startPoint: .top, endPoint: .bottom)
+                    VStack {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                                .inset(by: 12.0)
+                                .fill(Color.white)
+                                .shadow(color: Color(#colorLiteral(red: 0.5, green: 0.1775960342, blue: 0, alpha: 1)).opacity(0.6), radius: 1.0, x: 0, y: 1.8)
 
-                VStack {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .inset(by: 12.0)
-                            .fill(Color.white)
-                            .shadow(color: Color(#colorLiteral(red: 0.5, green: 0.1775960342, blue: 0, alpha: 1)).opacity(0.6), radius: 1.0, x: 0, y: 1.8)
+                            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                                .inset(by: 15.0)
+                                .fill(Color(#colorLiteral(red: 0.8537944547, green: 0.9499960396, blue: 1, alpha: 1))) // .fill(Color(#colorLiteral(red: 0.8537944547, green: 0.9499960396, blue: 1, alpha: 1)))
 
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .inset(by: 15.0)
-                            .fill(Color(#colorLiteral(red: 0.8537944547, green: 0.9499960396, blue: 1, alpha: 1))) // .fill(Color(#colorLiteral(red: 0.8537944547, green: 0.9499960396, blue: 1, alpha: 1)))
+                            Text("WID")
+                                .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4245878609, blue: 0.6526296053, alpha: 1)))
+                                .font(.system(size: 36.0, weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
+                                .offset(x: 0, y: -16.2 - 2.7)
 
-                        Text("WID")
-                            .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4245878609, blue: 0.6526296053, alpha: 1)))
-                            .font(Font.system(size: 36.0, weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
-                            .offset(x: 0, y: -16.2 - 2.7)
+                            Text("GET")
+                                .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4245878609, blue: 0.6526296053, alpha: 1)))
+                                // .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4274785522, blue: 0.6537857605, alpha: 1)))
+                                .font(.system(size: 36.0, weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
+                                .offset(x: 0, y: 16.2 - 2.2)
+                        }
+                        .frame(width: 102.4, height: 102.4)
 
-                        Text("GET")
-                            .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4245878609, blue: 0.6526296053, alpha: 1)))
-                            // .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4274785522, blue: 0.6537857605, alpha: 1)))
-                            .font(Font.system(size: 36.0, weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
-                            .offset(x: 0, y: 16.2 - 2.2)
+//                        Text("Edit this widget to pick one that you've made!").font(.system(size: widgetFamily == .systemLarge ? 20 : 12, weight: .bold, design: .rounded)).foregroundColor(.white).multilineTextAlignment(.center).padding(.horizontal, 8)
+                        Text("<\(geometry.size.width), \(geometry.size.height)>").font(.system(size: widgetFamily == .systemLarge ? 20 : 12, weight: .bold, design: .rounded)).foregroundColor(.white).multilineTextAlignment(.center).padding(.horizontal, 8)
                     }
-                    .frame(width: 102.4, height: 102.4)
-
-                    Text("Edit this widget to pick one that you've made!").font(Font.system(size: widgetFamily == .systemLarge ? 20 : 12, weight: .bold, design: .rounded)).foregroundColor(.white).multilineTextAlignment(.center).padding(.horizontal, 8)
+                    .unredacted()
+                    .padding(.bottom, 12)
                 }
-                .unredacted()
-                .padding(.bottom, 12)
             }
         }
     }

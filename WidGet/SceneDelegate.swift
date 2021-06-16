@@ -67,7 +67,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 }
         }
 
-        let contentView = RootView(appOptions: self.appOptions, document: document)
+        let contentView = WidgetMenu(appOptions: self.appOptions, document: document)
 
         // Use a UIHostingController as window root view controller.
         if let windowScene = scene as? UIWindowScene {

@@ -209,6 +209,22 @@ extension ContentPanelModel {
         var isRemoteContentType: Bool { ContentType.remoteContentTypes.contains(self) }
         var isRemoteFeedType: Bool { ContentType.remoteFeedTypes.contains(self) }
         var isImageType: Bool { ContentType.imageTypes.contains(self) }
+        
+        var description: String {
+            switch self {
+            case .text: return "Text Panel"
+            case .image: return "Image Panel"
+            case .solidColor: return "Solid Color Panel"
+            case .gradient: return "Gradient Panel"
+            case .remoteResource: return "Web Content Panel"
+            case .remoteImage: return "Remote Image Panel"
+            case .remoteFeedList: return "Web Feed Panel"
+            case .remoteFeedGrid: return "Web Feed Panel"
+            case .remoteCalendar: return "Web Calendar Panel"
+            case .link: return "Link Panel"
+            }
+
+        }
     }
 
     var cacheFileURLs: Set<URL> {
@@ -502,7 +518,7 @@ extension ContentPanelModel {
                 default: design = .default
                 }
 
-                font = Font.system(size: size, weight: weight, design: design)
+                font = .system(size: size, weight: weight, design: design)
 
                 if italic {
                     font = font.italic()
@@ -514,7 +530,7 @@ extension ContentPanelModel {
                     font = font.smallCaps()
                 }
             } else {
-                font = Font.custom(fontName, fixedSize: size)
+                font = .custom(fontName, fixedSize: size)
             }
 
             return font

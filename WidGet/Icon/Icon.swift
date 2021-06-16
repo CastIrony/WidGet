@@ -28,12 +28,12 @@ struct Icon: View {
 //
 //                Text("WID")
 //                    .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4245878609, blue: 0.6526296053, alpha: 1)))
-//                    .font(Font.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
+//                    .font(.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
 //                    .offset(x: 0, y: canvas[-162 - 27])
 //
 //                Text("GET")
 //                    .foregroundColor(Color(#colorLiteral(red: 0, green: 0.4245878609, blue: 0.6526296053, alpha: 1)))
-//                    .font(Font.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
+//                    .font(.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
 //                    .offset(x: 0, y: canvas[162 - 22])
 
                 Color.black
@@ -49,12 +49,12 @@ struct Icon: View {
 
                     Text("WID")
                         .foregroundColor(Color.white)
-                        .font(Font.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
+                        .font(.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
                         .offset(x: 0, y: canvas[-162 - 27])
 
                     Text("GET")
                         .foregroundColor(Color.white)
-                        .font(Font.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
+                        .font(.system(size: canvas[360], weight: Font.Weight.bold, design: Font.Design.rounded).smallCaps())
                         .offset(x: 0, y: canvas[162 - 22])
                 }
                 .compositingGroup()

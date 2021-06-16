@@ -11,7 +11,7 @@ struct WidgetEditor: View {
     @State var widget: WidgetModel
     @Binding var toolbarBlur: Bool
 
-    let saveWidget: (WidgetModel) -> Void
+    @ScaledMetric(wrappedValue: 60) var menuButtonHeight: CGFloat
 
     @State var undoStack: [WidgetModel] = []
     @State var redoStack: [WidgetModel] = []
@@ -48,66 +48,9 @@ struct WidgetEditor: View {
 
     @State var loadingContentPanelIDs: Set<UUID> = []
 
-    var showingFieldEditor: Bool {
-        let showingFieldEditor = widgetTextField != nil || widgetColorField != nil || textField != nil || urlField != nil || colorField != nil || fontField != nil
-
-        DispatchQueue.main.async { toolbarBlur = showingFieldEditor }
-
-        return showingFieldEditor
-    }
+    let saveWidget: (WidgetModel) -> Void
 
     let toolbarHeight: CGFloat
-
-    @ViewBuilder
-    fileprivate func fieldEditors() -> some View {
-        if let widgetTextField = widgetTextField {
-            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
-
-            TextFieldEditor(text: widgetKeyPathBinding(widgetTextField), fieldName: fieldName, fieldType: .text, hideFieldEditor: hideFieldEditors)
-                .padding(.horizontal, 20)
-                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
-        }
-
-        if let widgetColorField = widgetColorField {
-            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
-
-            ColorFieldEditor(colorField: widgetKeyPathBinding(widgetColorField), fieldName: fieldName, widgetColors: widget.widgetColors(), hideFieldEditor: hideFieldEditors)
-                .padding(.horizontal, 20)
-                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
-        }
-
-        if let textField = textField {
-            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
-
-            TextFieldEditor(text: contentPanelKeyPathBinding(textField.0, textField.1), fieldName: fieldName, fieldType: .text, hideFieldEditor: hideFieldEditors)
-                .padding(.horizontal, 20)
-                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
-        }
-
-        if let urlField = urlField {
-            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
-
-            TextFieldEditor(text: contentPanelKeyPathBinding(urlField.0, urlField.1), fieldName: fieldName, fieldType: .url, hideFieldEditor: hideFieldEditors)
-                .padding(.horizontal, 20)
-                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
-        }
-
-        if let colorField = colorField {
-            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
-
-            ColorFieldEditor(colorField: contentPanelKeyPathBinding(colorField.0, colorField.1), fieldName: fieldName, widgetColors: widget.widgetColors(exceptFor: colorField.0), hideFieldEditor: hideFieldEditors)
-                .padding(.horizontal, 20)
-                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
-        }
-
-        if let fontField = fontField {
-            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
-
-            FontFieldEditor(font: contentPanelKeyPathBinding(fontField.0, fontField.1), fieldName: fieldName, hideFieldEditor: hideFieldEditors)
-                .padding(.horizontal, 20)
-                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
-        }
-    }
 
     var body: some View {
         ZStack {
@@ -121,8 +64,8 @@ struct WidgetEditor: View {
             }
             .ignoresSafeArea()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .blur(radius: showingFieldEditor ? 50 : 0)
-            .opacity(showingFieldEditor ? 0 : 1)
+            .blur(radius: isShowingFieldEditor ? 50 : 0)
+            .opacity(isShowingFieldEditor ? 0 : 1)
 
             fieldEditors()
         }
@@ -231,7 +174,7 @@ struct WidgetEditor: View {
                 let snapGuidesActive = selectedContentPanelID != contentPanelID && ((activeGuideIDX?.starts(with: String(describing: contentPanelID)) ?? false) || (activeGuideIDY?.starts(with: String(describing: contentPanelID)) ?? false))
 
                 ClearView()
-                    .canvasResizable(coordinateSpace: "canvas", frame: frameBinding(contentPanelID), isSelected: contentPanelSelectionBinding(contentPanelID), snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY, activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesActive: snapGuidesActive, cornerRadius: widget.cornerRadius(for: contentPanelID), colorScheme: colorScheme)
+                    .canvasResizable(coordinateSpace: "canvas", frame: frameBinding(for: contentPanelID), isSelected: contentPanelSelectionBinding(for: contentPanelID), snapGuidesX: snapGuidesX, snapGuidesY: snapGuidesY, activeGuideIDX: $activeGuideIDX, activeGuideIDY: $activeGuideIDY, snapGuidesActive: snapGuidesActive, cornerRadius: widget.cornerRadius(for: contentPanelID), colorScheme: colorScheme)
                     .zIndex(contentPanelID == selectedContentPanelID ? 2 : 1)
             }
         }
@@ -288,7 +231,7 @@ struct WidgetEditor: View {
 
                             let frame = widget.contentPanelsByID[contentPanelID]!.frame.deviceRect
 
-                            ContentPanelView(contentPanel: contentPanelBinding(contentPanelID), isSelected: contentPanelSelectionBinding(contentPanelID), isLoading: loadingContentPanelIDs.contains(contentPanelID))
+                            ContentPanelView(contentPanel: contentPanelBinding(for: contentPanelID), isSelected: contentPanelSelectionBinding(for: contentPanelID), isLoading: loadingContentPanelIDs.contains(contentPanelID))
                                 .id(contentPanelID)
                                 .frame(width: frame.width, height: frame.height, alignment: widget.contentPanelsByID[contentPanelID]?.contentAlignment.alignment ?? .center)
                                 .clipShape(RoundedRectangle(cornerRadius: widget.cornerRadius(for: contentPanelID), style: .continuous))
@@ -310,20 +253,18 @@ struct WidgetEditor: View {
         .frame(height: deviceFrame.height, alignment: .center)
     }
 
-    @ScaledMetric(wrappedValue: 60) var menuButtonHeight: CGFloat
-
     @ViewBuilder
     func addContentMenu() -> some View {
         Menu {
-            Button(action: { addContent(.text) }) { Label("Add Text", systemImage: "text.bubble") }
-            Button(action: { addContent(.image) }) { Label("Add Image", systemImage: "photo") }
-            Button(action: { addContent(.solidColor) }) { Label("Add Solid Color", systemImage: "rectangle.fill") }
-            Button(action: { addContent(.gradient) }) { Label("Add Gradient", systemImage: "lineweight") }
-            Button(action: { addContent(.remoteResource) }) { Label("Add Remote Feed", systemImage: "globe") }
+            Button(action: { addContentPanel(.text) }) { Label("Add Text", systemImage: "text.bubble") }
+            Button(action: { addContentPanel(.image) }) { Label("Add Image", systemImage: "photo") }
+            Button(action: { addContentPanel(.solidColor) }) { Label("Add Solid Color", systemImage: "rectangle.fill") }
+            Button(action: { addContentPanel(.gradient) }) { Label("Add Gradient", systemImage: "lineweight") }
+            Button(action: { addContentPanel(.remoteResource) }) { Label("Add Web Content", systemImage: "globe") }
         }
         label: {
             Label { Text("Add Panel") } icon: { Image(systemName: "plus.rectangle.on.rectangle") }
-                .font(Font.title3.weight(.medium))
+                .font(.title3.weight(.medium))
                 .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
                 .padding(.horizontal, 20)
                 .frame(minHeight: menuButtonHeight)
@@ -336,20 +277,20 @@ struct WidgetEditor: View {
     func pasteContentMenu() -> some View {
         Menu {
             if pasteboardHasImage {
-                Button(action: { addContent(.image, paste: true) }) { Label("Paste Image", systemImage: "photo") }
+                Button(action: { addContentPanel(.image, paste: true) }) { Label("Paste Image", systemImage: "photo") }
             }
 
             if pasteboardHasURL {
-                Button(action: { addContent(.remoteResource, paste: true) }) { Label("Paste Remote Feed", systemImage: "globe") }
+                Button(action: { addContentPanel(.remoteResource, paste: true) }) { Label("Paste Web URL", systemImage: "globe") }
             }
 
             if pasteboardHasText {
-                Button(action: { addContent(.text, paste: true) }) { Label("Paste Text", systemImage: "text.bubble") }
+                Button(action: { addContentPanel(.text, paste: true) }) { Label("Paste Text", systemImage: "text.bubble") }
             }
         }
         label: {
             Label { Text("Paste") } icon: { Image(systemName: "doc.on.clipboard") }
-                .font(Font.title3.weight(.medium))
+                .font(.title3.weight(.medium))
                 .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
                 .padding(.horizontal, 20)
                 .frame(minHeight: menuButtonHeight)
@@ -358,7 +299,8 @@ struct WidgetEditor: View {
         }
     }
 
-    @ViewBuilder func contentPanelForms() -> some View {
+    @ViewBuilder
+    func contentPanelForms() -> some View {
         ScrollViewReader {
             _ in
 
@@ -390,7 +332,94 @@ struct WidgetEditor: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    func addContent(_ contentType: ContentPanelModel.ContentType, paste: Bool = false) {
+    @ViewBuilder
+    func contentPanelForm(for contentPanelID: UUID, scroll: @escaping () -> Void) -> some View {
+        let contentPanelIndex = widget.contentPanelIDs.firstIndex(of: contentPanelID)!
+        let isFirst = (contentPanelIndex == 0)
+        let isLast = (contentPanelIndex == widget.contentPanelIDs.count - 1)
+
+        let panelActions = ContentPanelForm.PanelActions(
+            bringToFront: isFirst ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: 0) } },
+            bringForward: isFirst ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: contentPanelIndex - 1) } },
+            sendBackward: isLast ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: contentPanelIndex + 2) } },
+            sendToBack: isLast ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: widget.contentPanelIDs.count) } },
+            duplicate: { selectedContentPanelID = widget.duplicateContentPanel(widget.contentPanelsByID[contentPanelID]!) },
+            resetFrame: { withAnimation(.spring()) { widget.contentPanelsByID[contentPanelID]?.frame = widget.defaultContentFrame } },
+            delete: { widget.deleteContentPanel(contentPanelID) },
+            scroll: scroll,
+            loadContent: loadContentAction(for: contentPanelID),
+            showTextFieldEditor: showTextFieldEditor(contentPanelID:keyPath:fieldName:),
+            showURLFieldEditor: showURLFieldEditor(contentPanelID:keyPath:fieldName:),
+            showColorFieldEditor: showColorFieldEditor(contentPanelID:keyPath:fieldName:),
+            showFontFieldEditor: showFontFieldEditor(contentPanelID:keyPath:fieldName:)
+        )
+
+        ContentPanelForm(contentPanel: contentPanelBinding(for: contentPanelID),
+                         isSelected: contentPanelSelectionBinding(for: contentPanelID),
+                         isLoading: loadingContentPanelIDs.contains(contentPanelID),
+                         panelActions: panelActions)
+    }
+
+    @ViewBuilder
+    private func fieldEditors() -> some View {
+        if let widgetTextField = widgetTextField {
+            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
+
+            TextFieldEditor(text: widgetKeyPathBinding(for: widgetTextField), fieldName: fieldName, fieldType: .text, hideFieldEditor: hideFieldEditors)
+                .padding(.horizontal, 20)
+                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+        }
+
+        if let widgetColorField = widgetColorField {
+            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
+
+            ColorFieldEditor(colorField: widgetKeyPathBinding(for: widgetColorField), fieldName: fieldName, widgetColors: widget.widgetColors(), hideFieldEditor: hideFieldEditors)
+                .padding(.horizontal, 20)
+                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+        }
+
+        if let textField = textField {
+            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
+
+            TextFieldEditor(text: contentPanelKeyPathBinding(for: textField.contentPanelID, keyPath: textField.keyPath), fieldName: fieldName, fieldType: .text, hideFieldEditor: hideFieldEditors)
+                .padding(.horizontal, 20)
+                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+        }
+
+        if let urlField = urlField {
+            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
+
+            TextFieldEditor(text: contentPanelKeyPathBinding(for: urlField.contentPanelID, keyPath: urlField.keyPath), fieldName: fieldName, fieldType: .URL, hideFieldEditor: hideFieldEditors)
+                .padding(.horizontal, 20)
+                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+        }
+
+        if let colorField = colorField {
+            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
+
+            ColorFieldEditor(colorField: contentPanelKeyPathBinding(for: colorField.contentPanelID, keyPath: colorField.keyPath), fieldName: fieldName, widgetColors: widget.widgetColors(exceptFor: colorField.0), hideFieldEditor: hideFieldEditors)
+                .padding(.horizontal, 20)
+                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+        }
+
+        if let fontField = fontField {
+            ClearView().onTapGesture { withAnimation(.spring()) { hideFieldEditors() } }
+
+            FontFieldEditor(font: contentPanelKeyPathBinding(for: fontField.contentPanelID, keyPath: fontField.keyPath), fieldName: fieldName, hideFieldEditor: hideFieldEditors)
+                .padding(.horizontal, 20)
+                .transition(AnyTransition.opacity.combined(with: .move(edge: .bottom)))
+        }
+    }
+
+    var isShowingFieldEditor: Bool {
+        let showingFieldEditor = widgetTextField != nil || widgetColorField != nil || textField != nil || urlField != nil || colorField != nil || fontField != nil
+
+        DispatchQueue.main.async { toolbarBlur = showingFieldEditor }
+
+        return showingFieldEditor
+    }
+    
+    func addContentPanel(_ contentType: ContentPanelModel.ContentType, paste: Bool = false) {
         withAnimation {
             selectedContentPanelID = widget.addContentPanel(contentType: contentType, paste: paste)
 
@@ -401,7 +430,7 @@ struct WidgetEditor: View {
         }
     }
 
-    func frameBinding(_ contentPanelID: UUID) -> Binding<CGRect> {
+    func frameBinding(for contentPanelID: UUID) -> Binding<CGRect> {
         Binding {
             widget.contentPanelsByID[contentPanelID]!.frame.deviceRect
         }
@@ -410,60 +439,53 @@ struct WidgetEditor: View {
         }
     }
 
-    func contentPanelBinding(_ contentPanelID: UUID) -> Binding<ContentPanelModel> {
+    func contentPanelBinding(for contentPanelID: UUID) -> Binding<ContentPanelModel> {
         Binding(get: { widget.contentPanelsByID[contentPanelID]! }, set: { widget.contentPanelsByID[contentPanelID] = $0 })
     }
 
-    func contentPanelSelectionBinding(_ contentPanelID: UUID) -> Binding<Bool> {
+    func contentPanelSelectionBinding(for contentPanelID: UUID) -> Binding<Bool> {
         Binding(get: { contentPanelID == selectedContentPanelID }, set: { selectedContentPanelID = $0 ? contentPanelID : nil })
     }
 
-    func widgetKeyPathBinding<T>(_ keyPath: WritableKeyPath<WidgetModel, T>) -> Binding<T> {
+    func widgetKeyPathBinding<T>(for keyPath: WritableKeyPath<WidgetModel, T>) -> Binding<T> {
         Binding(get: { widget[keyPath: keyPath] }, set: { widget[keyPath: keyPath] = $0 })
     }
 
-    func contentPanelKeyPathBinding<T>(_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, T>) -> Binding<T>
-    {
+    func contentPanelKeyPathBinding<T>(for contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, T>) -> Binding<T> {
         Binding(get: { widget.contentPanelsByID[contentPanelID]![keyPath: keyPath] }, set: { widget.contentPanelsByID[contentPanelID]![keyPath: keyPath] = $0 })
     }
 
-    func showWidgetTextFieldEditor(keyPath: WritableKeyPath<WidgetModel, String>, fieldName: String)
-    {
+    func showWidgetTextFieldEditor(keyPath: WritableKeyPath<WidgetModel, String>, fieldName: String) {
         self.fieldName = fieldName
 
         withAnimation(.spring()) { self.widgetTextField = keyPath }
     }
 
-    func showWidgetColorFieldEditor(keyPath: WritableKeyPath<WidgetModel, HSBColor>, fieldName: String)
-    {
+    func showWidgetColorFieldEditor(keyPath: WritableKeyPath<WidgetModel, HSBColor>, fieldName: String) {
         self.fieldName = fieldName
 
         withAnimation(.spring()) { self.widgetColorField = keyPath }
     }
 
-    func showColorFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, HSBColor>, fieldName: String)
-    {
+    func showColorFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, HSBColor>, fieldName: String) {
         self.fieldName = fieldName
 
         withAnimation(.spring()) { self.colorField = (contentPanelID, keyPath) }
     }
 
-    func showFontFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, ContentPanelModel.FontModel>, fieldName: String)
-    {
+    func showFontFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, ContentPanelModel.FontModel>, fieldName: String) {
         self.fieldName = fieldName
 
         withAnimation(.spring()) { self.fontField = (contentPanelID, keyPath) }
     }
 
-    func showTextFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, String>, fieldName: String)
-    {
+    func showTextFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, String>, fieldName: String) {
         self.fieldName = fieldName
 
         withAnimation(.spring()) { self.textField = (contentPanelID, keyPath) }
     }
 
-    func showURLFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, String>, fieldName: String)
-    {
+    func showURLFieldEditor(contentPanelID: UUID, keyPath: WritableKeyPath<ContentPanelModel, String>, fieldName: String) {
         self.fieldName = fieldName
 
         withAnimation(.spring()) { self.urlField = (contentPanelID, keyPath) }
@@ -481,60 +503,6 @@ struct WidgetEditor: View {
         }
     }
 
-    @ViewBuilder
-    func contentPanelForm(for contentPanelID: UUID, scroll: @escaping () -> Void) -> some View {
-        let contentPanelIndex = widget.contentPanelIDs.firstIndex(of: contentPanelID)!
-        let isFirst = (contentPanelIndex == 0)
-        let isLast = (contentPanelIndex == widget.contentPanelIDs.count - 1)
-
-        let bringToFront = isFirst ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: 0) } }
-        let bringForward = isFirst ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: contentPanelIndex - 1) } }
-        let sendBackward = isLast ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: contentPanelIndex + 2) } }
-        let sendToBack = isLast ? nil : { withAnimation(.spring()) { widget.contentPanelIDs.move(fromOffsets: IndexSet(integer: contentPanelIndex), toOffset: widget.contentPanelIDs.count) } }
-
-        let duplicate: () -> Void = { selectedContentPanelID = widget.duplicateContentPanel(widget.contentPanelsByID[contentPanelID]!) }
-        let resetFrame: () -> Void = { withAnimation(.spring()) { widget.contentPanelsByID[contentPanelID]?.frame = widget.defaultContentFrame } }
-        let delete: () -> Void = { widget.deleteContentPanel(contentPanelID) }
-
-        let panelActions = ContentPanelForm.PanelActions(bringToFront: bringToFront, bringForward: bringForward, sendBackward: sendBackward, sendToBack: sendToBack, duplicate: duplicate, resetFrame: resetFrame, delete: delete)
-
-        ContentPanelForm(contentPanel: contentPanelBinding(contentPanelID), isSelected: contentPanelSelectionBinding(contentPanelID), isLoading: loadingContentPanelIDs.contains(contentPanelID), scroll: scroll, loadContent: loadContentFunc(for: contentPanelID), panelActions: panelActions, showTextFieldEditor: showTextFieldEditor(contentPanelID:keyPath:fieldName:), showURLFieldEditor: showURLFieldEditor(contentPanelID:keyPath:fieldName:), showColorFieldEditor: showColorFieldEditor(contentPanelID:keyPath:fieldName:), showFontFieldEditor: showFontFieldEditor(contentPanelID:keyPath:fieldName:))
-            .background((colorScheme == .dark ? Color.black : Color.white).opacity(contentPanelID == selectedContentPanelID ? 0.5 : 0.2))
-            .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).inset(by: -1).strokeBorder(colorScheme == .dark ? Color.white.opacity(contentPanelID == selectedContentPanelID ? 0.35 : 0.2) : Color.black.opacity(contentPanelID == selectedContentPanelID ? 0.1 : 0.05)))
-            .padding(.horizontal, 8)
-            .modifier(ContentPanelFormDeletionModifier(delete: { withAnimation { widget.deleteContentPanel(contentPanelID) } }))
-            .padding(.top, 20)
-            .padding(.bottom, contentPanelID == widget.contentPanelIDs.last ? 20 : -20)
-            .accessibilityElement(children: .contain)
-            .accessibility(label: Text(contentPanelDescription(for: contentPanelID)))
-            .accessibilityAction(named: "Edit Panel") { selectedContentPanelID = contentPanelID }
-            .applyIf(bringToFront != nil) { $0.accessibilityAction(named: "Bring to Front") { bringToFront?() } }
-            .applyIf(bringForward != nil) { $0.accessibilityAction(named: "Bring Forward") { bringForward?() } }
-            .applyIf(sendBackward != nil) { $0.accessibilityAction(named: "Send Backward") { sendBackward?() } }
-            .applyIf(sendToBack != nil) { $0.accessibilityAction(named: "Send to Back") { sendToBack?() } }
-            .accessibilityAction(named: "Duplicate") { duplicate() }
-            .accessibilityAction(named: "Reset Frame") { resetFrame() }
-            .accessibilityAction(named: "Delete") { delete() }
-    }
-
-    func contentPanelDescription(for contentPanelID: UUID) -> String {
-        guard let contentPanel = widget.contentPanelsByID[contentPanelID] else { return "Content Panel" }
-
-        switch contentPanel.contentType {
-        case .text: return "Text Panel"
-        case .image: return "Image Panel"
-        case .solidColor: return "Solid Color Panel"
-        case .gradient: return "Gradient Panel"
-        case .remoteResource: return "Remote Feed Panel"
-        case .remoteImage: return "Remote Image Panel"
-        case .remoteFeedList: return "Remote Feed Panel"
-        case .remoteFeedGrid: return "Remote Feed Panel"
-        case .remoteCalendar: return "Remote Calendar Panel"
-        case .link: return "Link"
-        }
-    }
-
     var snapGuidesX: [SnapGuide] {
         var snapGuides: [SnapGuide] = []
 
@@ -546,14 +514,17 @@ struct WidgetEditor: View {
         let largePadding = CGFloat(16)
 
         let strength = CGFloat(4)
+        let highStrength: Double = 6
 
-        snapGuides.append(SnapGuide(position: 0, id: "leading", strength: strength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: 0, id: "leading", strength: highStrength, alwaysVisible: false, projected: false))
         snapGuides.append(SnapGuide(position: smallPadding, id: "leading small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: largePadding, id: "leading large padding", strength: strength, alwaysVisible: true, projected: false))
+        snapGuides.append(SnapGuide(position: fullWidth * 0.5 - smallPadding, id: "horizontal center leading small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullWidth * 0.5, id: "horizontal center", strength: strength, alwaysVisible: true, projected: false))
+        snapGuides.append(SnapGuide(position: fullWidth * 0.5 + smallPadding, id: "horizontal center trailing small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullWidth - largePadding, id: "trailing large padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullWidth - smallPadding, id: "trailing small padding", strength: strength, alwaysVisible: true, projected: false))
-        snapGuides.append(SnapGuide(position: fullWidth, id: "trailing", strength: strength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: fullWidth, id: "trailing", strength: highStrength, alwaysVisible: false, projected: false))
 
         for contentPanelId in widget.contentPanelIDs {
             if contentPanelId != selectedContentPanelID {
@@ -585,14 +556,17 @@ struct WidgetEditor: View {
         let largePadding = CGFloat(16)
 
         let strength = CGFloat(4)
+        let highStrength: Double = 6
 
-        snapGuides.append(SnapGuide(position: 0, id: "top", strength: strength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: 0, id: "top", strength: highStrength, alwaysVisible: false, projected: false))
         snapGuides.append(SnapGuide(position: smallPadding, id: "top small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: largePadding, id: "top large padding", strength: strength, alwaysVisible: true, projected: false))
+        snapGuides.append(SnapGuide(position: fullHeight * 0.5 - smallPadding, id: "vertical center top small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullHeight * 0.5, id: "vertical center", strength: strength, alwaysVisible: true, projected: false))
+        snapGuides.append(SnapGuide(position: fullHeight * 0.5 + smallPadding, id: "vertical center bottom small padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullHeight - largePadding, id: "bottom large padding", strength: strength, alwaysVisible: true, projected: false))
         snapGuides.append(SnapGuide(position: fullHeight - smallPadding, id: "bottom small padding", strength: strength, alwaysVisible: true, projected: false))
-        snapGuides.append(SnapGuide(position: fullHeight, id: "bottom", strength: strength, alwaysVisible: false, projected: false))
+        snapGuides.append(SnapGuide(position: fullHeight, id: "bottom", strength: highStrength, alwaysVisible: false, projected: false))
 
         for contentPanelId in widget.contentPanelIDs {
             if contentPanelId != selectedContentPanelID {
@@ -671,7 +645,7 @@ struct WidgetEditor: View {
         }
     }
 
-    func loadContentFunc(for contentPanelID: UUID) -> (() -> Void) {
+    func loadContentAction(for contentPanelID: UUID) -> (() -> Void) {
         return { loadContent(for: contentPanelID) }
     }
 }
@@ -689,14 +663,14 @@ struct ContentPanelFormDeletionModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         HStack(spacing: 0) {
-            Button(action: delete) { Image(systemName: "xmark").font(Font.title.bold()).frame(width: 60, height: 60, alignment: .center) }
+            Button(action: delete) { Image(systemName: "xmark").font(.title.bold()).frame(width: 60, height: 60, alignment: .center) }
                 .buttonStyle(DeleteButtonStyle())
                 .opacity(baseOffset < 0 ? 0 : 1)
                 .accessibility(hidden: true)
 
             content
 
-            Button(action: delete) { Image(systemName: "xmark").font(Font.title.bold()).frame(width: 60, height: 60, alignment: .center) }
+            Button(action: delete) { Image(systemName: "xmark").font(.title.bold()).frame(width: 60, height: 60, alignment: .center) }
                 .buttonStyle(DeleteButtonStyle())
                 .opacity(baseOffset > 0 ? 0 : 1)
                 .accessibility(hidden: true)
@@ -759,7 +733,7 @@ struct WidgetForm: View {
     var body: some View {
         VStack(spacing: 8) {
             Text(widgetDescription)
-                .font(Font.title2.weight(.semibold))
+                .font(.title2.weight(.semibold))
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             FormDivider()
@@ -830,7 +804,7 @@ struct WidgetForm: View {
                 Button(action: { showColorFieldEditor(fieldKeyPath.appending(path: \.lightColor), "\(fieldName)\(widget[keyPath: fieldKeyPath].enableDarkColor ? " (Light)" : "")") })
                     {
                         Text(widget[keyPath: fieldKeyPath].enableDarkColor ? "Light" : "")
-                            .font(Font.body.bold().smallCaps())
+                            .font(.body.bold().smallCaps())
                             .padding(.bottom, 1)
                             .frame(maxWidth: .infinity)
                     }
@@ -841,7 +815,7 @@ struct WidgetForm: View {
                     Button(action: { showColorFieldEditor(fieldKeyPath.appending(path: \.darkColor), "\(fieldName) (Dark)") })
                         {
                             Text("Dark")
-                                .font(Font.body.bold().smallCaps())
+                                .font(.body.bold().smallCaps())
                                 .padding(.bottom, 1)
                                 .frame(maxWidth: .infinity)
                         }

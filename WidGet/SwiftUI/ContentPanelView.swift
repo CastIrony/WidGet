@@ -23,9 +23,9 @@ struct ContentPanelView: View {
     var body: some View {
         if isLoading {
             ZStack {
-                VisualEffectBlur(blurStyle: .systemMaterial)
                 (colorScheme == .light ? Color.black : Color.white).mask(ProgressView())
             }
+            .background(Material.regular)
         } else {
             Group {
                 switch contentPanel.contentType {
@@ -130,7 +130,6 @@ struct FeedListView: View {
 
     func rowHeight(_ rowIndex: Int) -> CGFloat {
         guard let rowHeight = rowHeights[rowIndex] else { return 30 }
-
         return rowHeight
     }
 
@@ -182,18 +181,16 @@ struct FeedListView: View {
         }
         .foregroundColor(Color(contentPanel.foregroundColor.uiColor(for: colorScheme)))
         .wrapInLink(destination: contentPanel.contentItems[rowIndex].linkURL, shouldWrap: insideWidget)
+        .measureHeight(coordinateSpace: contentPanel.id)
+        .frame(width: contentPanel.frame.deviceRect.width, height: rowHeight(rowIndex), alignment: .leading)
+        .position(x: contentPanel.frame.deviceRect.width / 2, y: heightThrough(endIndex: rowIndex) - rowHeight(rowIndex) / 2)
+        .opacity(rowIndex < maxIndex && heightThrough(endIndex: rowIndex) < contentPanel.frame.deviceRect.height ? 1 : 0)
     }
 
     var body: some View {
         ZStack {
             ForEach(min(contentPanel.contentItemOffset, maxIndex) ..< maxIndex, id: \.self) {
-                rowIndex in
-
-                itemContent(rowIndex: rowIndex)
-                    .measureHeight(coordinateSpace: contentPanel.id)
-                    .frame(width: contentPanel.frame.deviceRect.width, height: rowHeight(rowIndex), alignment: .leading)
-                    .position(x: contentPanel.frame.deviceRect.width / 2, y: heightThrough(endIndex: rowIndex) - rowHeight(rowIndex) / 2)
-                    .opacity(rowIndex < maxIndex && heightThrough(endIndex: rowIndex) < contentPanel.frame.deviceRect.height ? 1 : 0)
+                itemContent(rowIndex: $0)
             }
         }
         .coordinateSpace(name: contentPanel.id)
@@ -252,6 +249,7 @@ struct FeedGridView: View {
                 let column = index % contentPanel.gridColumns
 
                 if index >= 0, row < contentPanel.gridRows {
+                    
                     if
                         let imageURL = contentItem.imageURL,
                         let uiImage = ImageCache.shared.image(for: imageURL.absoluteString, usePrebaked: insideWidget)
@@ -263,7 +261,8 @@ struct FeedGridView: View {
                             .frame(width: cellWidth, height: cellHeight)
                             .position(x: CGFloat(column) * (cellWidth + contentPanel.contentSpacing) + cellWidth / 2, y: CGFloat(row) * (cellHeight + contentPanel.contentSpacing) + cellHeight / 2)
                     } else {
-                        Color.gray.opacity(0.2)
+                        Color.gray
+                            .opacity(0.2)
                             .clipShape(RoundedRectangle(cornerRadius: contentPanel.contentSpacing / 2, style: .continuous))
                             .wrapInLink(destination: contentItem.linkURL, shouldWrap: insideWidget)
                             .frame(width: cellWidth, height: cellHeight)

@@ -190,6 +190,14 @@ extension WidgetModel {
         case medium
         case large
 
+        var iconName: String {
+            switch self {
+            case .small: return "square.grid.2x2"
+            case .medium: return "rectangle.grid.1x2"
+            case .large: return "square"
+            }
+        }
+        
         var deviceFrame: CGSize {
             switch self {
             case .small:
@@ -220,11 +228,11 @@ extension WidgetModel {
                 case CGSize(width: 414, height: 896): return CGSize(width: 360, height: 169)
                 case CGSize(width: 428, height: 926): return CGSize(width: 364, height: 170)
 
-                case CGSize(width: 768, height: 1024): return CGSize(width: 329, height: 155)
-                case CGSize(width: 810, height: 1080): return CGSize(width: 329, height: 155)
-                case CGSize(width: 820, height: 1180): return CGSize(width: 329, height: 155)
-                case CGSize(width: 834, height: 1194): return CGSize(width: 329, height: 155)
-                case CGSize(width: 1024, height: 1366): return CGSize(width: 364, height: 170)
+                case CGSize(width: 768, height: 1024): return CGSize(width: 342, height: 155)
+                case CGSize(width: 810, height: 1080): return CGSize(width: 342, height: 155)
+                case CGSize(width: 820, height: 1180): return CGSize(width: 342, height: 155)
+                case CGSize(width: 834, height: 1194): return CGSize(width: 342, height: 155)
+                case CGSize(width: 1024, height: 1366): return CGSize(width: 378.5, height: 170)
 
                 default: return CGSize(width: 300, height: 150)
                 }
@@ -238,11 +246,11 @@ extension WidgetModel {
                 case CGSize(width: 414, height: 896): return CGSize(width: 360, height: 379)
                 case CGSize(width: 428, height: 926): return CGSize(width: 364, height: 382)
 
-                case CGSize(width: 768, height: 1024): return CGSize(width: 329, height: 345)
-                case CGSize(width: 810, height: 1080): return CGSize(width: 329, height: 345)
-                case CGSize(width: 820, height: 1180): return CGSize(width: 329, height: 345)
-                case CGSize(width: 834, height: 1194): return CGSize(width: 329, height: 345)
-                case CGSize(width: 1024, height: 1366): return CGSize(width: 364, height: 382)
+                case CGSize(width: 768, height: 1024): return CGSize(width: 342, height: 342)
+                case CGSize(width: 810, height: 1080): return CGSize(width: 342, height: 342)
+                case CGSize(width: 820, height: 1180): return CGSize(width: 342, height: 342)
+                case CGSize(width: 834, height: 1194): return CGSize(width: 342, height: 342)
+                case CGSize(width: 1024, height: 1366): return CGSize(width: 378.5, height: 378.5)
 
                 default: return CGSize(width: 300, height: 300)
                 }
@@ -286,9 +294,7 @@ extension WidgetModel {
     }
 
     var cornerRadius: CGFloat {
-        let screenWidth = UIScreen.main.bounds.size.width
-
-        return 0.053 * screenWidth
+        return 0.062 * WidgetModel.Size.large.deviceFrame.width
     }
 
     func cornerRadius(for contentPanelID: UUID) -> CGFloat {

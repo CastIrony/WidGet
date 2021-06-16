@@ -159,18 +159,20 @@ extension Sequence where Iterator.Element: Hashable {
 
 let systemColorsLight =
     [
-        (color: RGBColor(red: 0 / 255, green: 0 / 255, blue: 0 / 255, alpha: 1).hsb, name: "Black"),
-        (color: RGBColor(red: 255 / 255, green: 255 / 255, blue: 255 / 255, alpha: 1).hsb, name: "White"),
-
-        (color: RGBColor(red: 255 / 255, green: 45 / 255, blue: 85 / 255, alpha: 1).hsb, name: "System Pink"),
-        (color: RGBColor(red: 255 / 255, green: 59 / 255, blue: 48 / 255, alpha: 1).hsb, name: "System Red"),
-        (color: RGBColor(red: 255 / 255, green: 149 / 255, blue: 0 / 255, alpha: 1).hsb, name: "System Orange"),
-        (color: RGBColor(red: 255 / 255, green: 204 / 255, blue: 0 / 255, alpha: 1).hsb, name: "System Yellow"),
-        (color: RGBColor(red: 52 / 255, green: 199 / 255, blue: 89 / 255, alpha: 1).hsb, name: "System Green"),
-        (color: RGBColor(red: 90 / 255, green: 200 / 255, blue: 250 / 255, alpha: 1).hsb, name: "System Teal"),
-        (color: RGBColor(red: 0 / 255, green: 122 / 255, blue: 255 / 255, alpha: 1).hsb, name: "System Blue"),
-        (color: RGBColor(red: 88 / 255, green: 86 / 255, blue: 214 / 255, alpha: 1).hsb, name: "System Indigo "),
-        (color: RGBColor(red: 175 / 255, green: 82 / 255, blue: 222 / 255, alpha: 1).hsb, name: "System Purple"),
+        (color: RGBColor(red: 0.00000000000000000, green: 0.00000000000000000, blue: 0.00000000000000000, alpha: 1.0).hsb, name: "System Black"),
+        (color: RGBColor(red: 1.00000000000000000, green: 1.00000000000000000, blue: 1.00000000000000000, alpha: 1.0).hsb, name: "System White"),
+        (color: RGBColor(red: 0.99999994039535520, green: 0.23137253522872925, blue: 0.18823528289794922, alpha: 1.0).hsb, name: "System Red"),
+        (color: RGBColor(red: 0.99999994039535520, green: 0.58431375026702880, blue: 0.00000000000000000, alpha: 1.0).hsb, name: "System Orange"),
+        (color: RGBColor(red: 0.99999994039535520, green: 0.80000001192092900, blue: 0.00000000000000000, alpha: 1.0).hsb, name: "System Yellow"),
+        (color: RGBColor(red: 0.20392152667045593, green: 0.78039216995239260, blue: 0.34901958703994750, alpha: 1.0).hsb, name: "System Green"),
+        (color: RGBColor(red: 0.00000000000000000, green: 0.78039216995239260, blue: 0.74509805440902710, alpha: 1.0).hsb, name: "System Mint"),
+        (color: RGBColor(red: 0.18823528289794922, green: 0.69019609689712520, blue: 0.78039216995239260, alpha: 1.0).hsb, name: "System Teal"),
+        (color: RGBColor(red: 0.19607838988304138, green: 0.67843139171600340, blue: 0.90196079015731810, alpha: 1.0).hsb, name: "System Cyan"),
+        (color: RGBColor(red: 0.00000000000000000, green: 0.47843140363693240, blue: 0.99999994039535520, alpha: 1.0).hsb, name: "System Blue"),
+        (color: RGBColor(red: 0.34509801864624023, green: 0.33725488185882570, blue: 0.83921575546264650, alpha: 1.0).hsb, name: "System Indigo"),
+        (color: RGBColor(red: 0.68627452850341800, green: 0.32156863808631897, blue: 0.87058824300765990, alpha: 1.0).hsb, name: "System Purple"),
+        (color: RGBColor(red: 0.99999994039535520, green: 0.17647057771682740, blue: 0.33333331346511840, alpha: 1.0).hsb, name: "System Pink"),
+        (color: RGBColor(red: 0.63529413938522340, green: 0.51764702796936040, blue: 0.36862745881080630, alpha: 1.0).hsb, name: "System Brown"),
     ]
 
 let systemColorsDark =
@@ -178,15 +180,15 @@ let systemColorsDark =
         (color: RGBColor(red: 0 / 255, green: 0 / 255, blue: 0 / 255, alpha: 1).hsb, name: "System Black"),
         (color: RGBColor(red: 255 / 255, green: 255 / 255, blue: 255 / 255, alpha: 1).hsb, name: "System White"),
 
-        (color: RGBColor(red: 255 / 255, green: 55 / 255, blue: 95 / 255, alpha: 1).hsb, name: "System Pink "),
+        (color: RGBColor(red: 255 / 255, green: 55 / 255, blue: 95 / 255, alpha: 1).hsb, name: "System Pink"),
         (color: RGBColor(red: 255 / 255, green: 69 / 255, blue: 58 / 255, alpha: 1).hsb, name: "System Red"),
         (color: RGBColor(red: 255 / 255, green: 159 / 255, blue: 10 / 255, alpha: 1).hsb, name: "System Orange"),
         (color: RGBColor(red: 255 / 255, green: 214 / 255, blue: 10 / 255, alpha: 1).hsb, name: "System Yellow"),
         (color: RGBColor(red: 48 / 255, green: 209 / 255, blue: 88 / 255, alpha: 1).hsb, name: "System Green"),
-        (color: RGBColor(red: 100 / 255, green: 210 / 255, blue: 255 / 255, alpha: 1).hsb, name: "System Teal "),
+        (color: RGBColor(red: 100 / 255, green: 210 / 255, blue: 255 / 255, alpha: 1).hsb, name: "System Teal"),
         (color: RGBColor(red: 10 / 255, green: 132 / 255, blue: 255 / 255, alpha: 1).hsb, name: "System Blue"),
         (color: RGBColor(red: 94 / 255, green: 92 / 255, blue: 230 / 255, alpha: 1).hsb, name: "System Indigo"),
-        (color: RGBColor(red: 191 / 255, green: 90 / 255, blue: 242 / 255, alpha: 1).hsb, name: "System Purple "),
+        (color: RGBColor(red: 191 / 255, green: 90 / 255, blue: 242 / 255, alpha: 1).hsb, name: "System Purple"),
     ]
 
 let systemGrays =

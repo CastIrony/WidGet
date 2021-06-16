@@ -18,10 +18,10 @@ struct LoadingOverlayView: View {
 
                 if linkDescription.count > 0 {
                     VStack(spacing: 30) {
-                        Text("Loading").font(Font.largeTitle.bold().smallCaps()).foregroundColor(Color(white: 0.4)).transition(.identity)
+                        Text("Loading").font(.largeTitle.bold().smallCaps()).foregroundColor(Color(white: 0.4)).transition(.identity)
 
                         Text(linkDescription)
-                            .font(Font.largeTitle.bold())
+                            .font(.largeTitle.bold())
                             .foregroundColor(Color(white: 0.4))
                             .multilineTextAlignment(.center)
                             .transition(.identity)

@@ -60,26 +60,22 @@ struct RemoteResourceLoader {
             let htmlString = String(data: data, encoding: .utf8),
             let document = try? SwiftSoup.parse(htmlString, response.url?.absoluteString ?? "")
         else {
-            completion(nil, "Unable to find a remote feed")
+            completion(nil, "Unable to find a feed")
             return
         }
 
         if
-            let rssLink = try? document.select("link[type=application/rss+xml]").first(),
-            let rssURLString = try? rssLink.attr("href"),
-            let rssURL = URL(string: rssURLString, relativeTo: response.url)
-        {
+        let rssLink = try? document.select("link[type=application/rss+xml]").first(),
+        let rssURLString = try? rssLink.attr("href"),
+        let rssURL = URL(string: rssURLString, relativeTo: response.url) {
             loadResource(from: rssURL, completion: completion)
         } else if
-            let channelIDMeta = try? document.select("meta[itemProp=channelId]"),
-            let channelID = try? channelIDMeta.attr("content"),
-            channelID.count > 0,
-            let rssURL = URL(string: "https://www.youtube.com/feeds/videos.xml?channel_id=\(channelID)")
-        {
+        let channelIDMeta = try? document.select("meta[itemProp=channelId]"),
+        let channelID = try? channelIDMeta.attr("content"),
+        channelID.count > 0,
+        let rssURL = URL(string: "https://www.youtube.com/feeds/videos.xml?channel_id=\(channelID)") {
             loadResource(from: rssURL, completion: completion) // handle youtube occasionally forgetting to include the rss link
-        } else if
-            let channelIDRange = htmlString.range(of: "channelId")
-        {
+        } else if let channelIDRange = htmlString.range(of: "channelId") {
             let channelIDStart = htmlString.index(channelIDRange.upperBound, offsetBy: 3)
             let channelIDEnd = htmlString.index(channelIDStart, offsetBy: 24)
             let channelID = htmlString[Range(uncheckedBounds: (channelIDStart, channelIDEnd))]
@@ -88,10 +84,10 @@ struct RemoteResourceLoader {
             {
                 loadResource(from: rssURL, completion: completion) // handle youtube occasionally forgetting to include the rss link
             } else {
-                completion(nil, "Unable to find a remote feed")
+                completion(nil, "Unable to find a feed")
             }
         } else {
-            completion(nil, "Unable to find a remote feed")
+            completion(nil, "Unable to find a feed")
         }
     }
 
@@ -100,7 +96,7 @@ struct RemoteResourceLoader {
         guard
             let string = String(data: data, encoding: .utf8)
         else {
-            completion(nil, "Unable to find a remote calendar")
+            completion(nil, "Unable to find a calendar")
             return
         }
 
@@ -127,9 +123,9 @@ struct RemoteResourceLoader {
     static func handlePDFResponse(response: URLResponse, data: Data, completion: @escaping Completion)
     {
         guard
-            let dataProvider = CGDataProvider(data: data as CFData),
-            let document = CGPDFDocument(dataProvider),
-            let page = document.page(at: 1)
+        let dataProvider = CGDataProvider(data: data as CFData),
+        let document = CGPDFDocument(dataProvider),
+        let page = document.page(at: 1)
         else {
             completion(nil, "Unable to load PDF")
             return

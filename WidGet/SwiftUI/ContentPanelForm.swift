@@ -20,15 +20,7 @@ struct ContentPanelForm: View {
     @State var labelWidth: CGFloat = 120
     let isLoading: Bool
 
-    var scroll: () -> Void
-    var loadContent: () -> Void
-
     let panelActions: PanelActions
-
-    let showTextFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, String>, _ fieldName: String) -> Void
-    let showURLFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, String>, _ fieldName: String) -> Void
-    let showColorFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, HSBColor>, _ fieldName: String) -> Void
-    let showFontFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, ContentPanelModel.FontModel>, _ fieldName: String) -> Void
 
     @Environment(\.colorScheme) var colorScheme
 
@@ -36,12 +28,12 @@ struct ContentPanelForm: View {
         VStack(alignment: .leading, spacing: innerPadding) {
             AHStack {
                 Label(title: { contentText }, icon: { contentIcon })
-                    .font(Font.title2.weight(.semibold))
+                    .font(.title2.weight(.semibold))
                     .contentShape(Rectangle())
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 15)
                     .contentShape(Rectangle())
-                    .onTapGesture { withAnimation(.spring()) { isSelected.toggle(); scroll() } }
+                    .onTapGesture { withAnimation(.spring()) { isSelected.toggle(); panelActions.scroll() } }
 
                 ZStack {
                     panelActionButton()
@@ -55,14 +47,20 @@ struct ContentPanelForm: View {
                 FormDivider()
 
                 if contentPanel.contentType.isRemoteContentType {
-                    URLRow(contentPanel: $contentPanel, fieldName: "URL", fieldKeyPath: \.targetURLString, showURLFieldEditor: showURLFieldEditor, clear: clear, loadContent: loadContent, isLoading: isLoading)
+                    URLRow(contentPanel: $contentPanel,
+                           fieldName: "URL",
+                           fieldKeyPath: \.targetURLString,
+                           showURLFieldEditor: panelActions.showURLFieldEditor,
+                           clear: clear,
+                           loadContent: panelActions.loadContent,
+                           isLoading: isLoading)
 
                     if contentPanel.errorString?.count ?? 0 > 0 {
                         ErrorRow(errorString: contentPanel.errorString ?? "")
                     }
 
                     if !isLoading {
-                        ChildContentRow(contentItems: contentPanel.contentItems, lastRefreshString: lastRefreshString, loadContent: loadContent, isLoading: isLoading)
+                        ChildContentRow(contentItems: contentPanel.contentItems, lastRefreshString: lastRefreshString, loadContent: panelActions.loadContent, isLoading: isLoading)
 
                         if contentPanel.contentType.isRemoteFeedType {
                             FeedStyleRow(contentPanel: $contentPanel, labelWidth: labelWidth).id("\(contentPanel.id) feed style")
@@ -76,7 +74,24 @@ struct ContentPanelForm: View {
             }
         }
         .padding(outerPadding)
-        .font(Font.body)
+        .font(.body)
+        .background((colorScheme == .dark ? Color.black : Color.white).opacity(isSelected ? 0.5 : 0.2))
+        .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 15, style: .continuous).inset(by: -1).strokeBorder(colorScheme == .dark ? Color.white.opacity(isSelected ? 0.35 : 0.2) : Color.black.opacity(isSelected ? 0.1 : 0.05)))
+        .padding(.horizontal, 8)
+        .modifier(ContentPanelFormDeletionModifier(delete: { withAnimation { panelActions.delete() } }))
+        .padding(.top, 20)
+        .accessibilityElement(children: .contain)
+        .accessibility(label: Text(contentPanel.contentType.description))
+        .accessibilityAction(named: "Edit Panel") { isSelected = true }
+        .applyIf(panelActions.bringToFront != nil) { $0.accessibilityAction(named: "Bring to Front") { panelActions.bringToFront?() } }
+        .applyIf(panelActions.bringForward != nil) { $0.accessibilityAction(named: "Bring Forward") { panelActions.bringForward?() } }
+        .applyIf(panelActions.sendBackward != nil) { $0.accessibilityAction(named: "Send Backward") { panelActions.sendBackward?() } }
+        .applyIf(panelActions.sendToBack != nil) { $0.accessibilityAction(named: "Send to Back") { panelActions.sendToBack?() } }
+        .accessibilityAction(named: "Duplicate") { panelActions.duplicate() }
+        .accessibilityAction(named: "Reset Frame") { panelActions.resetFrame() }
+        .accessibilityAction(named: "Delete Panel") { panelActions.delete() }
+
         .onPreferenceChange(LabelWidthPreferenceKey.self) {
             newValue in
 
@@ -135,7 +150,7 @@ struct ContentPanelForm: View {
             Button(action: panelActions.duplicate) { Label("Duplicate Content", systemImage: "rectangle.on.rectangle") }
             Button(action: panelActions.resetFrame) { Label("Reset Frame", systemImage: "arrow.uturn.backward") }
             Divider()
-            Button(action: panelActions.delete) { Label("Delete", systemImage: "minus.circle.fill") }
+            Button(role: .destructive, action: panelActions.delete) { Label("Delete Panel", systemImage: "minus.circle.fill") }
         }
         label: {
             Button(action: {}) { Label("Actions", systemImage: "gearshape.fill").labelStyle(IconOnlyLabelStyle()).foregroundColor(.primary) }.buttonStyle(FormButtonStyle())
@@ -151,43 +166,51 @@ struct ContentPanelForm: View {
         let duplicate: () -> Void
         let resetFrame: () -> Void
         let delete: () -> Void
+
+        var scroll: () -> Void
+        var loadContent: () -> Void
+
+        let showTextFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, String>, _ fieldName: String) -> Void
+        let showURLFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, String>, _ fieldName: String) -> Void
+        let showColorFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, HSBColor>, _ fieldName: String) -> Void
+        let showFontFieldEditor: (_ contentPanelID: UUID, _ keyPath: WritableKeyPath<ContentPanelModel, ContentPanelModel.FontModel>, _ fieldName: String) -> Void
     }
 }
 
 extension ContentPanelForm {
     @ViewBuilder
     var textPanelForm: some View {
-        TextRow(contentPanel: $contentPanel, fieldName: "Text", fieldKeyPath: \.titleText, showTextFieldEditor: showTextFieldEditor, labelWidth: labelWidth)
-        ColorRow(contentPanel: $contentPanel, fieldName: "Text Color", fieldKeyPath: \.foregroundColor, showColorFieldEditor: showColorFieldEditor, labelWidth: labelWidth)
-        FontRow(contentPanel: $contentPanel, fieldName: "Font", fieldKeyPath: \.titleFont, showFontFieldEditor: showFontFieldEditor, labelWidth: labelWidth)
+        TextRow(contentPanel: $contentPanel, fieldName: "Text", fieldKeyPath: \.titleText, showTextFieldEditor: panelActions.showTextFieldEditor, labelWidth: labelWidth)
+        ColorRow(contentPanel: $contentPanel, fieldName: "Text Color", fieldKeyPath: \.foregroundColor, showColorFieldEditor: panelActions.showColorFieldEditor, labelWidth: labelWidth)
+        FontRow(contentPanel: $contentPanel, fieldName: "Font", fieldKeyPath: \.titleFont, showFontFieldEditor: panelActions.showFontFieldEditor, labelWidth: labelWidth)
         NumberRow(title: "Text Size:", value: $contentPanel.titleFont.size, minimum: 10, maximum: 100, step: 1, labelWidth: labelWidth)
-        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: showURLFieldEditor, labelWidth: labelWidth)
+        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: panelActions.showURLFieldEditor, labelWidth: labelWidth)
     }
 
     @ViewBuilder
     var imagePanelForm: some View {
         ImageRow(contentPanel: $contentPanel, labelWidth: labelWidth, showingImagePickerLight: contentPanel.image.lightIdentifier == nil)
         ImageResizingModeRow(contentPanel: $contentPanel, labelWidth: labelWidth)
-        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: showURLFieldEditor, labelWidth: labelWidth)
+        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: panelActions.showURLFieldEditor, labelWidth: labelWidth)
     }
 
     @ViewBuilder
     var linkPanelForm: some View {
-        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: showURLFieldEditor, labelWidth: labelWidth)
+        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: panelActions.showURLFieldEditor, labelWidth: labelWidth)
     }
 
     @ViewBuilder
     var solidColorForm: some View {
-        ColorRow(contentPanel: $contentPanel, fieldName: "Color", fieldKeyPath: \.solidColor, showColorFieldEditor: showColorFieldEditor, labelWidth: labelWidth)
-        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: showURLFieldEditor, labelWidth: labelWidth)
+        ColorRow(contentPanel: $contentPanel, fieldName: "Color", fieldKeyPath: \.solidColor, showColorFieldEditor: panelActions.showColorFieldEditor, labelWidth: labelWidth)
+        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: panelActions.showURLFieldEditor, labelWidth: labelWidth)
     }
 
     @ViewBuilder
     var gradientForm: some View {
-        ColorRow(contentPanel: $contentPanel, fieldName: "Start Color", fieldKeyPath: \.gradientColor1, showColorFieldEditor: showColorFieldEditor, labelWidth: labelWidth)
-        ColorRow(contentPanel: $contentPanel, fieldName: "End Color", fieldKeyPath: \.gradientColor2, showColorFieldEditor: showColorFieldEditor, labelWidth: labelWidth)
+        ColorRow(contentPanel: $contentPanel, fieldName: "Start Color", fieldKeyPath: \.gradientColor1, showColorFieldEditor: panelActions.showColorFieldEditor, labelWidth: labelWidth)
+        ColorRow(contentPanel: $contentPanel, fieldName: "End Color", fieldKeyPath: \.gradientColor2, showColorFieldEditor: panelActions.showColorFieldEditor, labelWidth: labelWidth)
         NumberRow(title: "Angle:", value: gradientAngleBinding, minimum: 0, maximum: 360, step: 15, labelWidth: labelWidth)
-        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: showURLFieldEditor, labelWidth: labelWidth)
+        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: panelActions.showURLFieldEditor, labelWidth: labelWidth)
     }
 
     @ViewBuilder
@@ -199,7 +222,7 @@ extension ContentPanelForm {
     var remoteImagePanelForm: some View {
         ImageRow(contentPanel: $contentPanel, labelWidth: labelWidth, showingImagePickerLight: false)
         ImageResizingModeRow(contentPanel: $contentPanel, labelWidth: labelWidth)
-        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: showURLFieldEditor, labelWidth: labelWidth)
+        LinkURLRow(contentPanel: $contentPanel, fieldName: "Link URL", fieldKeyPath: \.linkURLString, showURLFieldEditor: panelActions.showURLFieldEditor, labelWidth: labelWidth)
     }
 
     @ViewBuilder
@@ -210,13 +233,13 @@ extension ContentPanelForm {
             NumberRow(title: "Start At:", value: contentItemOffsetBinding, minimum: 1, maximum: 20, step: 1, labelWidth: labelWidth)
             FormDivider().padding(.leading, labelWidth)
             NumberRow(title: "Spacing:", value: $contentPanel.contentSpacing, minimum: 0, maximum: 50, step: 1, labelWidth: labelWidth)
-            ColorRow(contentPanel: $contentPanel, fieldName: "Text Color", fieldKeyPath: \.foregroundColor, showColorFieldEditor: showColorFieldEditor, labelWidth: labelWidth)
+            ColorRow(contentPanel: $contentPanel, fieldName: "Text Color", fieldKeyPath: \.foregroundColor, showColorFieldEditor: panelActions.showColorFieldEditor, labelWidth: labelWidth)
         }
 
         FormDivider()
 
         Group {
-            FontRow(contentPanel: $contentPanel, fieldName: "Title Font", fieldKeyPath: \.titleFont, showFontFieldEditor: showFontFieldEditor, labelWidth: labelWidth)
+            FontRow(contentPanel: $contentPanel, fieldName: "Title Font", fieldKeyPath: \.titleFont, showFontFieldEditor: panelActions.showFontFieldEditor, labelWidth: labelWidth)
             NumberRow(title: "Title Size:", value: $contentPanel.titleFont.size, minimum: 10, maximum: 30, step: 1, labelWidth: labelWidth)
             NumberRow(title: "Title Lines:", value: titleLinesBinding, minimum: 1, maximum: 6, step: 1, labelWidth: labelWidth)
         }
@@ -224,7 +247,7 @@ extension ContentPanelForm {
         FormDivider()
 
         Group {
-            FontRow(contentPanel: $contentPanel, fieldName: "Body Font", fieldKeyPath: \.bodyFont, showFontFieldEditor: showFontFieldEditor, labelWidth: labelWidth)
+            FontRow(contentPanel: $contentPanel, fieldName: "Body Font", fieldKeyPath: \.bodyFont, showFontFieldEditor: panelActions.showFontFieldEditor, labelWidth: labelWidth)
             NumberRow(title: "Body Size:", value: $contentPanel.bodyFont.size, minimum: 10, maximum: 30, step: 1, labelWidth: labelWidth)
             NumberRow(title: "Body Lines:", value: bodyLinesBinding, minimum: 0, maximum: 6, step: 1, labelWidth: labelWidth)
         }
@@ -251,7 +274,7 @@ extension ContentPanelForm {
     @ViewBuilder
     var remoteFeedCalendarPanelForm: some View {
         EmptyView()
-        ColorRow(contentPanel: $contentPanel, fieldName: "Text Color", fieldKeyPath: \.foregroundColor, showColorFieldEditor: showColorFieldEditor, labelWidth: labelWidth)
+        ColorRow(contentPanel: $contentPanel, fieldName: "Text Color", fieldKeyPath: \.foregroundColor, showColorFieldEditor: panelActions.showColorFieldEditor, labelWidth: labelWidth)
     }
 
     var gridRowsBinding: Binding<CGFloat> {
@@ -306,11 +329,11 @@ extension ContentPanelForm {
         case .link: return Text("Link")
         case .solidColor: return Text("Solid Color")
         case .gradient: return Text("Gradient")
-        case .remoteResource: return Text("Remote Feed")
+        case .remoteResource: return Text("Web Content")
         case .remoteImage: return Text("Remote Image")
-        case .remoteFeedList: return Text("Remote Feed")
-        case .remoteFeedGrid: return Text("Remote Feed")
-        case .remoteCalendar: return Text("Remote Calendar")
+        case .remoteFeedList: return Text("Web Feed")
+        case .remoteFeedGrid: return Text("Web Feed")
+        case .remoteCalendar: return Text("Web Calendar")
         }
     }
 }
@@ -421,7 +444,7 @@ extension ContentPanelForm {
                         Color.clear.background(ProgressView()).frame(width: 16, height: 16)
                     } else {
                         Color.clear.background(Image(systemName: contentPanel.contentType == .remoteResource ? "arrow.down" : "arrow.clockwise"))
-                            .font(Font.body.weight(.medium))
+                            .font(.body.weight(.medium))
                             .frame(width: 16, height: 16)
                     }
                 }
@@ -441,11 +464,11 @@ extension ContentPanelForm {
         var body: some View {
             if contentItems.count > 0 {
                 AHStack(hSpacing: 8, vSpacing: 8) {
-                    Text("\(contentItems.count) item(s) loaded").font(Font.body.weight(.semibold))
+                    Text("\(contentItems.count) item(s) loaded").font(.body.weight(.semibold))
 
                     Spacer()
 
-                    Text(lastRefreshString).font(Font.caption)
+                    Text(lastRefreshString).font(.caption)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -499,7 +522,7 @@ extension ContentPanelForm {
                 Button(action: { showColorFieldEditor(contentPanel.id, fieldKeyPath.appending(path: \.lightColor), "\(fieldName)\(contentPanel[keyPath: fieldKeyPath].enableDarkColor ? " (Light)" : "")") })
                     {
                         Text(contentPanel[keyPath: fieldKeyPath].enableDarkColor ? "Light" : "")
-                            .font(Font.body.bold().smallCaps())
+                            .font(.body.bold().smallCaps())
                             .padding(.bottom, 1)
                             .frame(maxWidth: .infinity)
                     }
@@ -510,7 +533,7 @@ extension ContentPanelForm {
                     Button(action: { showColorFieldEditor(contentPanel.id, fieldKeyPath.appending(path: \.darkColor), "\(fieldName) (Dark)") })
                         {
                             Text("Dark")
-                                .font(Font.body.bold().smallCaps())
+                                .font(.body.bold().smallCaps())
                                 .padding(.bottom, 1)
                                 .frame(maxWidth: .infinity)
                         }
@@ -573,7 +596,7 @@ extension ContentPanelForm {
                 //                Button(action: { showColorFieldEditor(contentPanel.id, fieldKeyPath.appending(path: \.darkColor), "\(fieldName) - Dark") })
                 //                {
                 //                    Text("Dark")
-                //                    .font(Font.body.bold().smallCaps())
+                //                    .font(.body.bold().smallCaps())
                 //                    .foregroundColor(contentPanel[keyPath: fieldKeyPath.appending(path: \.darkColor)].opticalLuminance > 0.5 ? Color.black : Color.white)
                 //                    .padding(.bottom, 1)
                 //                    .frame(maxWidth: .infinity)
@@ -722,8 +745,8 @@ extension ContentPanelForm {
                                 }
                                 .padding(.horizontal, 4)
                                 .padding(8)
-                                .background(VisualEffectBlur(blurStyle: .systemThinMaterial).clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous)))
-                                .font(Font.body.bold().smallCaps())
+                                .background(Material.regular, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .font(.body.bold().smallCaps())
                                 .foregroundColor(colorScheme == .light ? .black : .white)
                                 .frame(minHeight: height * 4)
                                 .frame(maxWidth: .infinity)
@@ -732,8 +755,8 @@ extension ContentPanelForm {
                                     Image(systemName: "photo.on.rectangle.angled")
                                         .padding(.horizontal, 4)
                                         .padding(8)
-                                        .background(VisualEffectBlur(blurStyle: .systemThinMaterial).clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous)))
-                                        .font(Font.body.bold().smallCaps())
+                                        .background(Material.regular, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                        .font(.body.bold().smallCaps())
                                         .foregroundColor(colorScheme == .light ? .black : .white)
                                         .frame(minHeight: height * 4)
                                         .frame(maxWidth: .infinity)
@@ -761,8 +784,8 @@ extension ContentPanelForm {
                                 }
                                 .padding(.horizontal, 4)
                                 .padding(8)
-                                .background(VisualEffectBlur(blurStyle: .systemThinMaterial).clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous)))
-                                .font(Font.body.bold().smallCaps())
+                                .background(Material.regular, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .font(.body.bold().smallCaps())
                                 .foregroundColor(colorScheme == .light ? .black : .white)
                                 .frame(minHeight: height * 4)
                                 .frame(maxWidth: .infinity)
@@ -912,8 +935,8 @@ struct ContentPanelForm_Previews: PreviewProvider {
                 .padding(.bottom, 1)
                 .padding(.horizontal, 4)
                 .padding(4)
-                .background(VisualEffectBlur(blurStyle: .systemThinMaterial).clipShape(Capsule()))
-                .font(Font.body.bold().smallCaps())
+                .background(Material.regular, in: Capsule())
+                .font(.body.bold().smallCaps())
                 .foregroundColor(.black)
                 .frame(minHeight: 24 * 4)
                 .frame(maxWidth: .infinity)
@@ -1065,6 +1088,7 @@ struct FormColorButtonStyle: ButtonStyle {
                 .padding(.horizontal, padding)
                 .frame(minWidth: buttonHeight, minHeight: buttonHeight)
                 .background(RoundedRectangle(cornerRadius: 8, style: .continuous).inset(by: 4).fill(Color(hsbColor.uiColor)))
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).inset(by: 4).fill(ImagePaint(image: Image("alpha"))))
                 .background(RoundedRectangle(cornerRadius: 8, style: .continuous).inset(by: 1).fill(backgroundColor))
                 .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(borderColor))
         }
